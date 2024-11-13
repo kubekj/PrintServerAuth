@@ -11,21 +11,13 @@ import java.util.Base64;
 @Slf4j
 public class PasswordStorage {
     private static final int SALT_LENGTH = 16;
-    private static final String DB_URL = "jdbc:h2:mem:printserver;DB_CLOSE_DELAY=-1";
+    private static final String DB_URL = "jdbc:h2:mem:printserver;DB_CLOSE_DELAY=-1;";
     private static final String DB_USER = "sa";
     private static final String DB_PASSWORD = "";
 
     public PasswordStorage() {
         initDatabase();
-        try {
-            storePassword("alice", "password123");  // admin
-            storePassword("bob", "password123");    // technician
-            storePassword("cecilia", "password123"); // power user
-            storePassword("david", "password123");   // normal user
-            log.info("Test users created successfully");
-        } catch (Exception e) {
-            log.error("Error creating test users", e);
-        }
+        addTestUsers();
     }
 
     private void initDatabase() {
@@ -44,6 +36,18 @@ public class PasswordStorage {
         } catch (SQLException e) {
             log.error("Database initialization failed", e);
             throw new RuntimeException("Failed to initialize database", e);
+        }
+    }
+
+    private void addTestUsers() {
+        try {
+            storePassword("alice", "password123");  // admin
+            storePassword("bob", "password123");    // technician
+            storePassword("cecilia", "password123"); // power user
+            storePassword("david", "password123");   // normal user
+            log.info("Test users created successfully");
+        } catch (Exception e) {
+            log.error("Error creating test users", e);
         }
     }
 

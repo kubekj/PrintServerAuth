@@ -47,6 +47,7 @@ public class PrintServer {
         }
     }
 
+    //Main method to run the server
     public static void main(String[] args) {
         PrintServer server = new PrintServer();
 

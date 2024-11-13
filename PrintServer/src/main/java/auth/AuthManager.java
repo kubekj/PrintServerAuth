@@ -25,19 +25,14 @@ public class AuthManager {
 
     public boolean validateSession(String sessionId) {
         Session session = activeSessions.get(sessionId);
-        if (session != null && session.isValid()) return true;
+        if (session != null && session.isValid()) return false;
         log.debug("Removing invalid session: {}", sessionId);
         activeSessions.remove(sessionId);
-        return false;
+        return true;
     }
 
     public void logout(String sessionId) {
         log.info("Logging out session: {}", sessionId);
         activeSessions.remove(sessionId);
-    }
-
-    private void cleanExpiredSessions() {
-        log.debug("Cleaning expired sessions");
-        activeSessions.entrySet().removeIf(entry -> !entry.getValue().isValid());
     }
 }
