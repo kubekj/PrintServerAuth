@@ -28,6 +28,14 @@ public class PrintClient {
         }
     }
 
+    private boolean validateState() {
+        if (!isAuthenticated || jwtToken == null) {
+            log.error("Not authenticated. Please login first.");
+            return false;
+        }
+        return true;
+    }
+
     public void login(String username, String password) {
         try {
             String token = printService.login(username, password);
@@ -43,13 +51,11 @@ public class PrintClient {
 
     public String print(String filename, String printer) {
         if (!validateState()) return "Not authenticated";
-
+               
         try {
             return printService.print(jwtToken, filename, printer);
         } catch (RemoteException e) {
-            isAuthenticated = false;
-            jwtToken = null;
-            return "Print failed - please login again";
+            return "Print operation failed";
         }
     }
 
@@ -67,14 +73,6 @@ public class PrintClient {
         } catch (RemoteException e) {
             log.error("Logout failed: {}", e.getMessage());
         }
-    }
-
-    private boolean validateState() {
-        if (!isAuthenticated || jwtToken == null) {
-            log.error("Not authenticated. Please login first.");
-            return false;
-        }
-        return true;
     }
 
     public String queue(String printer) {
