@@ -3,15 +3,11 @@ package service;
 import auth.AuthManager;
 import auth.AuthenticationException;
 import auth.PasswordStorage;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 
 @Slf4j
 public class PrintService extends UnicastRemoteObject implements IPrintService {
@@ -35,52 +31,43 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
             throw new RemoteException("Invalid or expired session");
         }
 
-        if (!isRunning) {
-            return "Print server is not running";
-        }
+        if (!isRunning) return "Print server is not running";
 
         printerQueues.putIfAbsent(printer, new LinkedList<>());
         PrintJob job = new PrintJob(filename, printerQueues.get(printer).size() + 1);
         printerQueues.get(printer).offer(job);
 
         log.info("Print job added: {} for printer {}", filename, printer);
-        return "Print job " + job.getJobId() + " added to queue for " + printer;
+        return "Print job " + job.jobId() + " added to queue for " + printer;
     }
 
     @Override
     public String queue(String sessionId, String printer) throws RemoteException {
-        if (!authManager.validateSession(sessionId)) {
-            throw new RemoteException("Invalid or expired session");
-        }
+        if (!authManager.validateSession(sessionId)) throw new RemoteException("Invalid or expired session");
 
         Queue<PrintJob> queue = printerQueues.get(printer);
-        if (queue == null) {
-            return "No queue found for printer " + printer;
-        }
+
+        if (queue == null) return "No queue found for printer " + printer;
 
         StringBuilder sb = new StringBuilder();
         sb.append("Print queue for ").append(printer).append(":\n");
-        queue.forEach(job -> sb.append(job.getJobId()).append(" ").append(job.getFilename()).append("\n"));
+        queue.forEach(job -> sb.append(job.jobId()).append(" ").append(job.filename()).append("\n"));
         return sb.toString();
     }
 
     @Override
     public String topQueue(String sessionId, String printer, int job) throws RemoteException {
-        if (!authManager.validateSession(sessionId)) {
-            throw new RemoteException("Invalid or expired session");
-        }
+        if (!authManager.validateSession(sessionId)) throw new RemoteException("Invalid or expired session");
 
         Queue<PrintJob> queue = printerQueues.get(printer);
-        if (queue == null) {
-            return "No queue found for printer " + printer;
-        }
+        if (queue == null) return "No queue found for printer " + printer;
 
         Queue<PrintJob> newQueue = new LinkedList<>();
         PrintJob jobToMove = null;
 
         // Find the job and reconstruct queue
         for (PrintJob currentJob : queue) {
-            if (currentJob.getJobId() == job) {
+            if (currentJob.jobId() == job) {
                 jobToMove = currentJob;
             } else {
                 newQueue.offer(currentJob);
@@ -97,42 +84,31 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
     }
 
     @Override
-    public String start(String sessionId) throws RemoteException {
-        if (!authManager.validateSession(sessionId)) {
-            throw new RemoteException("Invalid or expired session");
-        }
-        isRunning = true;
+    public void start(String sessionId) throws RemoteException {
+        if (!authManager.validateSession(sessionId)) throw new RemoteException("Invalid or expired session");
+        this.isRunning = true;
         log.info("Print server started");
-        return "Print server started";
     }
 
     @Override
-    public String stop(String sessionId) throws RemoteException {
-        if (!authManager.validateSession(sessionId)) {
-            throw new RemoteException("Invalid or expired session");
-        }
-        isRunning = false;
+    public void stop(String sessionId) throws RemoteException {
+        if (!authManager.validateSession(sessionId)) throw new RemoteException("Invalid or expired session");
+        this.isRunning = false;
         log.info("Print server stopped");
-        return "Print server stopped";
     }
 
     @Override
-    public String restart(String sessionId) throws RemoteException {
-        if (!authManager.validateSession(sessionId)) {
-            throw new RemoteException("Invalid or expired session");
-        }
-        isRunning = false;
+    public void restart(String sessionId) throws RemoteException {
+        if (!authManager.validateSession(sessionId)) throw new RemoteException("Invalid or expired session");
+        this.isRunning = false;
         printerQueues.clear();
-        isRunning = true;
+        this.isRunning = true;
         log.info("Print server restarted");
-        return "Print server restarted";
     }
 
     @Override
     public String status(String sessionId, String printer) throws RemoteException {
-        if (!authManager.validateSession(sessionId)) {
-            throw new RemoteException("Invalid or expired session");
-        }
+        if (!authManager.validateSession(sessionId)) throw new RemoteException("Invalid or expired session");
         return String.format("Printer %s - Status: %s, Queue size: %d",
                 printer,
                 isRunning ? "Running" : "Stopped",
@@ -142,17 +118,13 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
 
     @Override
     public String readConfig(String sessionId, String parameter) throws RemoteException {
-        if (!authManager.validateSession(sessionId)) {
-            throw new RemoteException("Invalid or expired session");
-        }
+        if (!authManager.validateSession(sessionId)) throw new RemoteException("Invalid or expired session");
         return configParameters.getOrDefault(parameter, "Parameter not found");
     }
 
     @Override
     public String setConfig(String sessionId, String parameter, String value) throws RemoteException {
-        if (!authManager.validateSession(sessionId)) {
-            throw new RemoteException("Invalid or expired session");
-        }
+        if (!authManager.validateSession(sessionId)) throw new RemoteException("Invalid or expired session");
         configParameters.put(parameter, value);
         log.info("Configuration updated: {} = {}", parameter, value);
         return "Configuration updated";
@@ -175,9 +147,5 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
     }
 
     // Inner class to represent print jobs
-    @Data
-    private static class PrintJob {
-        private final String filename;
-        private final int jobId;
-    }
+    private record PrintJob(String filename, int jobId) { }
 }

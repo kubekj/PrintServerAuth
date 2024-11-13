@@ -9,7 +9,9 @@ import java.rmi.registry.Registry;
 @Slf4j
 public class PrintClient {
     private static final String HOST = "localhost";
-    private static final int PORT = 5099; // Same port as server
+    private static final int PORT = 5099;
+    private static final String USERNAME = "alice";
+    private static final String PASSWORD = "password123";
     private IPrintService printService;
     private String sessionId;
 
@@ -24,14 +26,12 @@ public class PrintClient {
         }
     }
 
-    public boolean login(String username, String password) {
+    public void login(String username, String password) {
         try {
             sessionId = printService.login(username, password);
             log.info("Successfully logged in as: {}", username);
-            return true;
         } catch (Exception e) {
             log.error("Login failed", e);
-            return false;
         }
     }
 
@@ -46,30 +46,23 @@ public class PrintClient {
 
     public void logout() {
         try {
-            if (sessionId != null) {
-                printService.logout(sessionId);
-                sessionId = null;
-                log.info("Successfully logged out");
-            }
+            if (sessionId == null) return;
+            printService.logout(sessionId);
+            sessionId = null;
+            log.info("Successfully logged out");
         } catch (Exception e) {
             log.error("Logout failed", e);
         }
     }
 
-    // Add a main method to test the client
+    // Main method to test the client
     public static void main(String[] args) {
         PrintClient client = new PrintClient();
         try {
             client.connect();
-
-            // Test login
-            if (client.login("testuser", "password")) {
-                // Test print operation
-                client.print("test.txt", "printer1");
-
-                // Test logout
-                client.logout();
-            }
+            client.login(USERNAME, PASSWORD);
+            client.print("test.txt", "printer1");
+            client.logout();
         } catch (Exception e) {
             log.error("Error in client operations", e);
         }

@@ -38,11 +38,10 @@ public class PrintServer {
 
     public void stop() {
         try {
-            if (printService != null) {
-                Registry registry = LocateRegistry.getRegistry(PORT);
-                registry.unbind("PrintService");
-                log.info("PrintServer stopped successfully");
-            }
+            if (printService == null) return;
+            Registry registry = LocateRegistry.getRegistry(PORT);
+            registry.unbind("PrintService");
+            log.info("PrintServer stopped successfully");
         } catch (Exception e) {
             log.error("Error stopping PrintServer", e);
         }

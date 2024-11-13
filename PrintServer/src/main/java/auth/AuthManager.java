@@ -25,9 +25,7 @@ public class AuthManager {
 
     public boolean validateSession(String sessionId) {
         Session session = activeSessions.get(sessionId);
-        if (session != null && session.isValid()) {
-            return true;
-        }
+        if (session != null && session.isValid()) return true;
         log.debug("Removing invalid session: {}", sessionId);
         activeSessions.remove(sessionId);
         return false;
