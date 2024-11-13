@@ -1,5 +1,6 @@
 package auth;
 
+import auth.exceptions.AuthenticationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,25 +15,42 @@ public class AuthManager {
 
     public String authenticate(String username, String password) throws AuthenticationException {
         if (passwordStorage.verifyPassword(username, password)) {
-            Session session = new Session(username);
-            activeSessions.put(session.getSessionId(), session);
-            log.info("User {} successfully authenticated", username);
-            return session.getSessionId();
+            String token = JwtManager.generateToken(username);
+            Session session = new Session(username, token);
+            activeSessions.put(token, session);
+            log.info("User {} successfully authenticated with token: {}", username, token);
+            return token;
         }
         log.warn("Authentication failed for user {}", username);
-        throw new AuthenticationException("Invalid credentials");
+        throw new AuthenticationException("Invalid credentials", username);
     }
 
-    public boolean validateSession(String sessionId) {
-        Session session = activeSessions.get(sessionId);
-        if (session != null && session.isValid()) return false;
-        log.debug("Removing invalid session: {}", sessionId);
-        activeSessions.remove(sessionId);
+    public boolean validateSession(String token) {
+        if (token == null) {
+            log.warn("Null token provided");
+            return false;
+        }
+
+        Session session = activeSessions.get(token);
+        if (session == null) {
+            log.warn("No session found for token: {}", token);
+            return false;
+        }
+
+        if (!JwtManager.validateToken(token)) {
+            log.warn("JWT validation failed for token: {}", token);
+            activeSessions.remove(token);
+            return false;
+        }
+
         return true;
     }
 
-    public void logout(String sessionId) {
-        log.info("Logging out session: {}", sessionId);
-        activeSessions.remove(sessionId);
+    public void logout(String token) {
+        if (activeSessions.remove(token) != null) {
+            log.info("Successfully logged out token: {}", token);
+        } else {
+            log.warn("No session found to logout for token: {}", token);
+        }
     }
 }

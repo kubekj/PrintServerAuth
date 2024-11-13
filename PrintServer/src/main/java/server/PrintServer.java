@@ -14,8 +14,8 @@ public class PrintServer {
 
     public void start() {
         try {
-            // Create the registry if it doesn't exist
             Registry registry;
+
             try {
                 registry = LocateRegistry.createRegistry(PORT);
                 log.info("RMI registry created on port {}", PORT);
@@ -24,7 +24,6 @@ public class PrintServer {
                 registry = LocateRegistry.getRegistry(PORT);
             }
 
-            // Create and bind the print service
             printService = new PrintService();
             registry.rebind("PrintService", printService);
 
