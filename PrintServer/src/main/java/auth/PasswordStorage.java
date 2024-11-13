@@ -116,7 +116,6 @@ public class PasswordStorage {
             byte[] hash = digest.digest(passwordWithSalt.getBytes());
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            log.error("Failed to hash password", e);
             throw new RuntimeException("Failed to hash password", e);
         }
     }
