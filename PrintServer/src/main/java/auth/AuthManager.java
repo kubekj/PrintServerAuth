@@ -1,9 +1,11 @@
 package auth;
 
-import auth.exceptions.AuthenticationException;
+import auth.exceptions.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -11,15 +13,21 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class AuthManager {
     private final PasswordStorage passwordStorage;
+    private final PolicyLoader policyLoader;
     private final Map<String, Session> activeSessions = new ConcurrentHashMap<>();
 
-    public String authenticate(String username, String password) throws AuthenticationException {
+    public AuthManager(String policyFilePath, PasswordStorage passwordStorage) throws IOException {
+        this.passwordStorage = passwordStorage;
+        this.policyLoader = new PolicyLoader(policyFilePath);
+    }
+
+    public Session authenticate(String username, String password) throws AuthenticationException {
         if (passwordStorage.verifyPassword(username, password)) {
             String token = JwtManager.generateToken(username);
             Session session = new Session(username, token);
             activeSessions.put(token, session);
             log.info("User {} successfully authenticated with token: {}", username, token);
-            return token;
+            return session;
         }
         log.warn("Authentication failed for user {}", username);
         throw new AuthenticationException("Invalid credentials", username);
@@ -44,6 +52,15 @@ public class AuthManager {
         }
 
         return true;
+    }
+
+    public boolean authorize(Session session, String operation) {
+        List<String> permissions = this.policyLoader.getPermissionForUser(session.getUsername());
+        if (permissions.contains(operation)) {
+            return true;
+        } else {
+            throw new SecurityException("User does not have permission for this operation");
+        }
     }
 
     public void logout(String token) {

@@ -1,5 +1,6 @@
 package client;
 
+import auth.Session;
 import lombok.extern.slf4j.Slf4j;
 import service.IPrintService;
 import java.rmi.RemoteException;
@@ -14,7 +15,7 @@ public class PrintClient {
     private static final String PASSWORD = "password123";
 
     private IPrintService printService;
-    private String token;
+    private Session session;
 
     public void connect() {
         try {
@@ -28,7 +29,7 @@ public class PrintClient {
 
     public void login(String username, String password) {
         try {
-            token = printService.login(username, password);
+            session = printService.login(username, password);
             log.info("Login attempt completed for {}", username);
         } catch (RemoteException e) {
             log.error("Login failed: {}", e.getMessage());
@@ -37,7 +38,7 @@ public class PrintClient {
 
     public String print(String filename, String printer) {
         try {
-            return printService.print(token, filename, printer);
+            return printService.print(session, filename, printer);
         } catch (RemoteException e) {
             return "Print operation failed";
         }
@@ -45,9 +46,9 @@ public class PrintClient {
 
     public void logout() {
         try {
-            printService.logout(token);
+            printService.logout(session);
             log.info("Logout completed");
-            token = null;
+            session = null;
         } catch (RemoteException e) {
             log.error("Logout failed: {}", e.getMessage());
         }
@@ -55,7 +56,7 @@ public class PrintClient {
 
     public String queue(String printer) {
         try {
-            return printService.queue(token, printer);
+            return printService.queue(session, printer);
         } catch (RemoteException e) {
             return "Queue operation failed";
         }
@@ -63,7 +64,7 @@ public class PrintClient {
 
     public String topQueue(String printer, int job) {
         try {
-            return printService.topQueue(token, printer, job);
+            return printService.topQueue(session, printer, job);
         } catch (RemoteException e) {
             return "TopQueue operation failed";
         }
@@ -71,7 +72,7 @@ public class PrintClient {
 
     public void restart() {
         try {
-            printService.restart(token);
+            printService.restart(session);
         } catch (RemoteException e) {
             log.error("Restart operation failed: {}", e.getMessage());
         }

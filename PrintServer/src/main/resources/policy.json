@@ -1,0 +1,9 @@
+{
+  "Alice": ["start", "stop", "restart", "status", "readConfig", "setConfig", "print", "queue", "topQueue"],
+  "Bob": ["start", "stop", "restart", "status", "readConfig", "setConfig"],
+  "Cecilia": ["print", "queue", "topQueue", "restart"],
+  "David": ["print", "queue"],
+  "Erica": ["print", "queue"],
+  "Fred": ["print", "queue"],
+  "George": ["print", "queue"]
+}

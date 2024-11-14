@@ -3,9 +3,11 @@ package auth;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @NoArgsConstructor
-public class Session {
+public class Session implements Serializable {
     private String username;
     private String token;
     private long createdTime;

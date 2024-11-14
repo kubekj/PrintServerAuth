@@ -1,21 +1,23 @@
 package service;
 
+import auth.Session;
+
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface IPrintService extends Remote {
     // Base operations
-    String print(String token, String filename, String printer) throws RemoteException;
-    String queue(String token, String printer) throws RemoteException;
-    String topQueue(String token, String printer, int job) throws RemoteException;
-    void start(String token) throws RemoteException;
-    void stop(String token) throws RemoteException;
-    void restart(String token) throws RemoteException;
-    String status(String token, String printer) throws RemoteException;
-    String readConfig(String token, String parameter) throws RemoteException;
-    String setConfig(String token, String parameter, String value) throws RemoteException;
+    String print(Session session, String filename, String printer) throws RemoteException;
+    String queue(Session session, String printer) throws RemoteException;
+    String topQueue(Session session, String printer, int job) throws RemoteException;
+    void start(Session session) throws RemoteException;
+    void stop(Session session) throws RemoteException;
+    void restart(Session session) throws RemoteException;
+    String status(Session session, String printer) throws RemoteException;
+    String readConfig(Session session, String parameter) throws RemoteException;
+    String setConfig(Session session, String parameter, String value) throws RemoteException;
 
     // Auth operations
-    String login(String username, String password) throws RemoteException;
-    void logout(String token) throws RemoteException;
+    Session login(String username, String password) throws RemoteException;
+    void logout(Session session) throws RemoteException;
 }
