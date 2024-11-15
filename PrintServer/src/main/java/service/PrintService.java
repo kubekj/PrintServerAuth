@@ -1,6 +1,7 @@
 package service;
 
 import auth.AuthManager;
+import auth.TokenManager;
 import auth.exceptions.AuthenticationException;
 import auth.PasswordStorage;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,7 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
 
     public PrintService() throws RemoteException {
         super();
-        this.authManager = new AuthManager(new PasswordStorage());
+        this.authManager = new AuthManager(new PasswordStorage(), new TokenManager());
         this.printerQueues = new HashMap<>();
         this.configParameters = new HashMap<>();
         this.isRunning = true;
@@ -26,7 +27,7 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
 
     @Override
     public String print(String token, String filename, String printer) throws RemoteException {
-        validateSessionOrThrow(token);
+        validateTokenOrThrow(token);
 
         if (!isRunning) return "Print server is not running";
 
@@ -52,7 +53,7 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
 
     @Override
     public String queue(String token, String printer) throws RemoteException {
-        validateSessionOrThrow(token);
+        validateTokenOrThrow(token);
         Queue<PrintJob> queue = printerQueues.get(printer);
         if (queue == null) return "No queue found for printer: " + printer;
         return printQueue(queue, printer);
@@ -60,7 +61,7 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
 
     @Override
     public String topQueue(String token, String printer, int job) throws RemoteException {
-        validateSessionOrThrow(token);
+        validateTokenOrThrow(token);
 
         Queue<PrintJob> queue = printerQueues.get(printer);
         if (queue == null) return "No queue found for printer " + printer;
@@ -89,21 +90,21 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
 
     @Override
     public void start(String token) throws RemoteException {
-        validateSessionOrThrow(token);
+        validateTokenOrThrow(token);
         this.isRunning = true;
         log.info("Print server started");
     }
 
     @Override
     public void stop(String token) throws RemoteException {
-        validateSessionOrThrow(token);
+        validateTokenOrThrow(token);
         this.isRunning = false;
         log.info("Print server stopped");
     }
 
     @Override
     public void restart(String token) throws RemoteException {
-        validateSessionOrThrow(token);
+        validateTokenOrThrow(token);
         this.isRunning = false;
         printerQueues.clear();
         this.isRunning = true;
@@ -112,7 +113,7 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
 
     @Override
     public String status(String token, String printer) throws RemoteException {
-        validateSessionOrThrow(token);
+        validateTokenOrThrow(token);
         return String.format("Printer %s - Status: %s, Queue size: %d",
                 printer,
                 isRunning ? "Running" : "Stopped",
@@ -122,13 +123,13 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
 
     @Override
     public String readConfig(String token, String parameter) throws RemoteException {
-        validateSessionOrThrow(token);
+        validateTokenOrThrow(token);
         return configParameters.getOrDefault(parameter, "Parameter not found");
     }
 
     @Override
     public String setConfig(String token, String parameter, String value) throws RemoteException {
-        validateSessionOrThrow(token);
+        validateTokenOrThrow(token);
         configParameters.put(parameter, value);
         log.info("Configuration updated: {} = {}", parameter, value);
         return "Configuration updated";
@@ -144,14 +145,8 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
         }
     }
 
-    @Override
-    public void logout(String token) throws RemoteException {
-        authManager.logout(token);
-        log.info("User logged out: {}", token);
-    }
-
-    private void validateSessionOrThrow(String token) throws RemoteException {
-        if (!authManager.validateSession(token)) {
+    private void validateTokenOrThrow(String token) throws RemoteException {
+        if (!authManager.validateToken(token)) {
             log.warn("Invalid or expired token: {}", token);
             throw new RemoteException("Invalid or expired token");
         }

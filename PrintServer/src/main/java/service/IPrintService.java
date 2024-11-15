@@ -17,5 +17,4 @@ public interface IPrintService extends Remote {
 
     // Auth operations
     String login(String username, String password) throws RemoteException;
-    void logout(String token) throws RemoteException;
 }

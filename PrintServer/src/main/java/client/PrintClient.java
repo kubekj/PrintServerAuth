@@ -43,16 +43,6 @@ public class PrintClient {
         }
     }
 
-    public void logout() {
-        try {
-            printService.logout(token);
-            log.info("Logout completed");
-            token = null;
-        } catch (RemoteException e) {
-            log.error("Logout failed: {}", e.getMessage());
-        }
-    }
-
     public String queue(String printer) {
         try {
             return printService.queue(token, printer);
@@ -88,7 +78,6 @@ public class PrintClient {
             System.out.println(client.queue("printer1"));
             System.out.println(client.topQueue("printer1", 1));
             client.restart();
-            client.logout();
         } catch (Exception e) {
             log.error("Error in client operations: {}", e.getMessage());
         }
