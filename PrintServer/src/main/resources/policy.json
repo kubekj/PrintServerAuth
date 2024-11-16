@@ -1,9 +1,9 @@
 {
-  "Alice": ["start", "stop", "restart", "status", "readConfig", "setConfig", "print", "queue", "topQueue"],
-  "Bob": ["start", "stop", "restart", "status", "readConfig", "setConfig"],
-  "Cecilia": ["print", "queue", "topQueue", "restart"],
-  "David": ["print", "queue"],
-  "Erica": ["print", "queue"],
-  "Fred": ["print", "queue"],
-  "George": ["print", "queue"]
+  "alice": ["start", "stop", "restart", "status", "readConfig", "setConfig", "print", "queue", "topQueue"],
+  "bob": ["start", "stop", "restart", "status", "readConfig", "setConfig"],
+  "cecilia": ["print", "queue", "topQueue", "restart"],
+  "david": ["print", "queue"],
+  "erica": ["print", "queue"],
+  "fred": ["print", "queue"],
+  "george": ["print", "queue"]
 }

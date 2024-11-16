@@ -54,8 +54,8 @@ public class AuthManager {
         return true;
     }
 
-    public boolean authorize(Session session, String operation) {
-        List<String> permissions = this.policyLoader.getPermissionForUser(session.getUsername());
+    public boolean authorize(String username, String operation) {
+        List<String> permissions = this.policyLoader.getPermissionForUser(username);
         if (permissions.contains(operation)) {
             return true;
         } else {
