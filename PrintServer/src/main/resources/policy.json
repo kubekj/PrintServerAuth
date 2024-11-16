@@ -1,9 +1,19 @@
 {
-  "Alice": ["start", "stop", "restart", "status", "readConfig", "setConfig", "print", "queue", "topQueue"],
-  "Bob": ["start", "stop", "restart", "status", "readConfig", "setConfig"],
-  "Cecilia": ["print", "queue", "topQueue", "restart"],
-  "David": ["print", "queue"],
-  "Erica": ["print", "queue"],
-  "Fred": ["print", "queue"],
-  "George": ["print", "queue"]
+  "roles": {
+    "User": {
+      "permissions": ["print", "queue"]
+    },
+    "PowerUser": {
+      "inherits": "User",
+      "permissions": ["topQueue", "restart"]
+    },
+    "Technician": {
+      "inherits": "User",
+      "permissions": ["start", "stop", "status", "readConfig", "setConfig"]
+    },
+    "Admin": {
+      "inherits": ["Technician", "PowerUser"],
+      "permissions": ["all"]
+    }
+  }
 }

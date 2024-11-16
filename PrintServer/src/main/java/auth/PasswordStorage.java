@@ -41,10 +41,10 @@ public class PasswordStorage {
 
     private void addTestUsers() {
         try {
-            storePassword("alice", "password123");  // admin
-            storePassword("bob", "password123");    // technician
-            storePassword("cecilia", "password123"); // power user
-            storePassword("david", "password123");   // normal user
+            storeUser("alice", "password123", "admin");  // admin
+            storeUser("bob", "password123", "technician");    // technician
+            storeUser("cecilia", "password123", "powerUser"); // power user
+            storeUser("david", "password123", "user");   // normal user
             log.info("Test users created successfully");
         } catch (Exception e) {
             log.error("Error creating test users", e);
@@ -55,7 +55,7 @@ public class PasswordStorage {
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
     }
 
-    public void storePassword(String username, String password) {
+    public void storeUser(String username, String password, String role) {
         String salt = generateSalt();
         String hashedPassword = hashPassword(password, salt);
 
@@ -66,6 +66,7 @@ public class PasswordStorage {
             stmt.setString(1, username);
             stmt.setString(2, salt);
             stmt.setString(3, hashedPassword);
+            stmt.setString(4, role);
             stmt.executeUpdate();
             log.info("Stored password for user: {}", username);
         } catch (SQLException e) {

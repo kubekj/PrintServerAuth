@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -57,6 +58,15 @@ public class AuthManager {
     public boolean authorize(Session session, String operation) {
         List<String> permissions = this.policyLoader.getPermissionForUser(session.getUsername());
         if (permissions.contains(operation)) {
+            return true;
+        } else {
+            throw new SecurityException("User does not have permission for this operation");
+        }
+    }
+
+    public boolean hasPermission(String role, String action) {
+        Set<String> permissions = this.policyLoader.getPermissions(role);
+        if (permissions.contains(action) || permissions.contains("all")) {
             return true;
         } else {
             throw new SecurityException("User does not have permission for this operation");

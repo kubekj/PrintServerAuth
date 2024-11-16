@@ -1,32 +1,61 @@
 package auth;
 
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.*;
 
 public class PolicyLoader {
-    private final Map<String, List<String>> accessControlList;
+    private Map<String, Set<String>> accessControlList = new HashMap<>();
 
-    public PolicyLoader(String filePath) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        // Load policy.json from the resources directory
-        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(filePath)) {
-            if (inputStream == null) {
-                throw new IOException("policy.json not found in resources");
-            }
-
-            // Read JSON file into Map
-            accessControlList = mapper.readValue(inputStream, Map.class);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load policy.json", e);
-        }
+    public PolicyLoader(String policyFilePath) throws IOException {
+        loadPolicy(policyFilePath);
     }
 
-    public List<String> getPermissionForUser(String username) {
-        return accessControlList.getOrDefault(username, List.of());
+    private void loadPolicy(String policyFilePath) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(new File(policyFilePath));
+        JsonNode rolesNode = root.get("roles");
+
+        // Load all roles and resolve inherited permissions
+        rolesNode.fieldNames().forEachRemaining(role -> resolveRolePermissions(role, rolesNode));
+    }
+
+    private Set<String> resolveRolePermissions(String role, JsonNode rolesNode) {
+        if (accessControlList.containsKey(role)) return accessControlList.get(role); // Return if already resolved
+
+        JsonNode roleNode = rolesNode.get(role);
+        Set<String> permissions = new HashSet<>();
+
+        // Inherit permissions if specified
+        if (roleNode.has("inherits")) {
+            if (roleNode.get("inherits").isArray()) {
+                for (JsonNode inheritedRole : roleNode.get("inherits")) {
+                    permissions.addAll(resolveRolePermissions(inheritedRole.asText(), rolesNode));
+                }
+            } else {
+                permissions.addAll(resolveRolePermissions(roleNode.get("inherits").asText(), rolesNode));
+            }
+        }
+
+        // Add defined permissions
+        if (roleNode.has("permissions")) {
+            for (JsonNode permission : roleNode.get("permissions")) {
+                permissions.add(permission.asText());
+            }
+        }
+
+        // Store resolved permissions
+        accessControlList.put(role, permissions);
+        return permissions;
+    }
+
+    public Set<String> getPermissionForUser(String username) {
+        String role = accessControlList.get(username);
+        if (role == null) {
+            throw new IllegalArgumentException("User not found: " + username);
+        }
+        return policyLoader.getPermissions(role);
     }
 }
