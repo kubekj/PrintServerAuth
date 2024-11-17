@@ -29,7 +29,8 @@ public class PasswordStorage {
                 CREATE TABLE IF NOT EXISTS users (
                     username VARCHAR(50) PRIMARY KEY,
                     salt VARCHAR(64) NOT NULL,
-                    password_hash VARCHAR(256) NOT NULL
+                    password_hash VARCHAR(256) NOT NULL,
+                    userRole VARCHAR(64)
                 )
             """);
             log.info("Database initialized successfully");
@@ -41,10 +42,10 @@ public class PasswordStorage {
 
     private void addTestUsers() {
         try {
-            storeUser("alice", "password123", "admin");  // admin
-            storeUser("bob", "password123", "technician");    // technician
-            storeUser("cecilia", "password123", "powerUser"); // power user
-            storeUser("david", "password123", "user");   // normal user
+            storeUser("alice", "password123", "Admin");  // admin
+            storeUser("bob", "password123", "Technician");    // technician
+            storeUser("cecilia", "password123", "PowerUser"); // power user
+            storeUser("david", "password123", "User");   // normal user
             log.info("Test users created successfully");
         } catch (Exception e) {
             log.error("Error creating test users", e);
@@ -55,18 +56,18 @@ public class PasswordStorage {
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
     }
 
-    public void storeUser(String username, String password, String role) {
+    public void storeUser(String username, String password, String userRole) {
         String salt = generateSalt();
         String hashedPassword = hashPassword(password, salt);
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(
-                     "MERGE INTO users (username, salt, password_hash) KEY(username) VALUES (?, ?, ?)")) {
+                     "MERGE INTO users (username, salt, password_hash, userRole) KEY(username) VALUES (?, ?, ?, ?)")) {
 
             stmt.setString(1, username);
             stmt.setString(2, salt);
             stmt.setString(3, hashedPassword);
-            stmt.setString(4, role);
+            stmt.setString(4, userRole);
             stmt.executeUpdate();
             log.info("Stored password for user: {}", username);
         } catch (SQLException e) {
@@ -101,6 +102,28 @@ public class PasswordStorage {
             log.error("Password verification failed for user: {}", username, e);
             return false;
         }
+    }
+
+    public String getUserRoleFromDatabase(String username) {
+        String role = null;
+        String query = "SELECT userRole FROM users WHERE username = ?";
+
+        try (Connection conn = this.getConnection(); // Replace with your connection method
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setString(1, username);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    role = rs.getString("userRole");
+                } else {
+                    throw new IllegalArgumentException("User not found: " + username);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to fetch role for user: " + username, e);
+        }
+
+        return role;
     }
 
     private String generateSalt() {

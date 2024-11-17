@@ -55,18 +55,10 @@ public class AuthManager {
         return true;
     }
 
-    public boolean authorize(Session session, String operation) {
-        List<String> permissions = this.policyLoader.getPermissionForUser(session.getUsername());
+    public boolean authorize(String username, String operation) {
+        String userRole = passwordStorage.getUserRoleFromDatabase(username);
+        Set<String> permissions = this.policyLoader.getPermissionForRole(userRole);
         if (permissions.contains(operation)) {
-            return true;
-        } else {
-            throw new SecurityException("User does not have permission for this operation");
-        }
-    }
-
-    public boolean hasPermission(String role, String action) {
-        Set<String> permissions = this.policyLoader.getPermissions(role);
-        if (permissions.contains(action) || permissions.contains("all")) {
             return true;
         } else {
             throw new SecurityException("User does not have permission for this operation");

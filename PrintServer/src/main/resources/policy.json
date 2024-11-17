@@ -8,8 +8,7 @@
       "permissions": ["topQueue", "restart"]
     },
     "Technician": {
-      "inherits": "User",
-      "permissions": ["start", "stop", "status", "readConfig", "setConfig"]
+      "permissions": ["start", "stop", "restart", "status", "readConfig", "setConfig"]
     },
     "Admin": {
       "inherits": ["Technician", "PowerUser"],

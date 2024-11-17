@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 public class PolicyLoader {
@@ -14,12 +15,20 @@ public class PolicyLoader {
     }
 
     private void loadPolicy(String policyFilePath) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode root = mapper.readTree(new File(policyFilePath));
-        JsonNode rolesNode = root.get("roles");
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(policyFilePath)) {
+            if (inputStream == null) {
+                throw new IOException("policy.json not found in resources");
+            }
 
-        // Load all roles and resolve inherited permissions
-        rolesNode.fieldNames().forEachRemaining(role -> resolveRolePermissions(role, rolesNode));
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(inputStream);
+            JsonNode rolesNode = root.get("roles");
+
+            // Load all roles and resolve inherited permissions
+            rolesNode.fieldNames().forEachRemaining(role -> resolveRolePermissions(role, rolesNode));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load policy.json", e);
+        }
     }
 
     private Set<String> resolveRolePermissions(String role, JsonNode rolesNode) {
@@ -51,11 +60,11 @@ public class PolicyLoader {
         return permissions;
     }
 
-    public Set<String> getPermissionForUser(String username) {
-        String role = accessControlList.get(username);
-        if (role == null) {
-            throw new IllegalArgumentException("User not found: " + username);
+    public Set<String> getPermissionForRole(String role) {
+        Set<String> permissions = accessControlList.get(role);
+        if (permissions == null) {
+            throw new IllegalArgumentException("Role not found: " + role);
         }
-        return policyLoader.getPermissions(role);
+        return permissions;
     }
 }
