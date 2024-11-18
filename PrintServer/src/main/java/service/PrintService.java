@@ -1,7 +1,7 @@
 package service;
 
 import auth.AuthManager;
-import auth.Session;
+import auth.TokenManager;
 import auth.exceptions.AuthenticationException;
 import auth.PasswordStorage;
 import lombok.extern.slf4j.Slf4j;
@@ -21,16 +21,16 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
 
     public PrintService() throws RemoteException, IOException {
         super();
-        this.authManager = new AuthManager(policyFilePath, new PasswordStorage());
+        this.authManager = new AuthManager(policyFilePath, new PasswordStorage(), new TokenManager());
         this.printerQueues = new HashMap<>();
         this.configParameters = new HashMap<>();
         this.isRunning = true;
     }
 
     @Override
-    public String print(Session session, String filename, String printer) throws RemoteException, SecurityException {
-        validateSessionOrThrow(session.getToken());
-        authorizeOrThrow(session.getUsername(), "print");
+    public String print(String token, String username, String filename, String printer) throws RemoteException, SecurityException {
+        validateTokenOrThrow(token);
+        authorizeOrThrow(username, "print");
 
         if (!isRunning) return "Print server is not running";
 
@@ -55,18 +55,18 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
     }
 
     @Override
-    public String queue(Session session, String printer) throws RemoteException, SecurityException {
-        validateSessionOrThrow(session.getToken());
-        authorizeOrThrow(session.getUsername(), "print");
+    public String queue(String token, String username, String printer) throws RemoteException, SecurityException {
+        validateTokenOrThrow(token);
+        authorizeOrThrow(username, "print");
         Queue<PrintJob> queue = printerQueues.get(printer);
         if (queue == null) return "No queue found for printer: " + printer;
         return printQueue(queue, printer);
     }
 
     @Override
-    public String topQueue(Session session, String printer, int job) throws RemoteException, SecurityException {
-        validateSessionOrThrow(session.getToken());
-        authorizeOrThrow(session.getUsername(), "topQueue");
+    public String topQueue(String token, String username, String printer, int job) throws RemoteException, SecurityException {
+        validateTokenOrThrow(token);
+        authorizeOrThrow(username, "topQueue");
 
         Queue<PrintJob> queue = printerQueues.get(printer);
         if (queue == null) return "No queue found for printer " + printer;
@@ -94,25 +94,25 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
     }
 
     @Override
-    public void start(Session session) throws RemoteException, SecurityException {
-        validateSessionOrThrow(session.getToken());
-        authorizeOrThrow(session.getUsername(), "start");
+    public void start(String token, String username) throws RemoteException, SecurityException {
+        validateTokenOrThrow(token);
+        authorizeOrThrow(username, "start");
         this.isRunning = true;
         log.info("Print server started");
     }
 
     @Override
-    public void stop(Session session) throws RemoteException, SecurityException {
-        validateSessionOrThrow(session.getToken());
-        authorizeOrThrow(session.getUsername(), "stop");
+    public void stop(String token, String username) throws RemoteException, SecurityException {
+        validateTokenOrThrow(token);
+        authorizeOrThrow(username, "stop");
         this.isRunning = false;
         log.info("Print server stopped");
     }
 
     @Override
-    public void restart(Session session) throws RemoteException, SecurityException {
-        validateSessionOrThrow(session.getToken());
-        authorizeOrThrow(session.getUsername(), "restart");
+    public void restart(String token, String username) throws RemoteException, SecurityException {
+        validateTokenOrThrow(token);
+        authorizeOrThrow(username, "restart");
         this.isRunning = false;
         printerQueues.clear();
         this.isRunning = true;
@@ -120,9 +120,9 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
     }
 
     @Override
-    public String status(Session session, String printer) throws RemoteException, SecurityException {
-        validateSessionOrThrow(session.getToken());
-        authorizeOrThrow(session.getUsername(), "status");
+    public String status(String token, String username, String printer) throws RemoteException, SecurityException {
+        validateTokenOrThrow(token);
+        authorizeOrThrow(username, "status");
         return String.format("Printer %s - Status: %s, Queue size: %d",
                 printer,
                 isRunning ? "Running" : "Stopped",
@@ -131,23 +131,23 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
     }
 
     @Override
-    public String readConfig(Session session, String parameter) throws RemoteException, SecurityException {
-        validateSessionOrThrow(session.getToken());
-        authorizeOrThrow(session.getUsername(), "readConfig");
+    public String readConfig(String token, String username, String parameter) throws RemoteException, SecurityException {
+        validateTokenOrThrow(token);
+        authorizeOrThrow(username, "readConfig");
         return configParameters.getOrDefault(parameter, "Parameter not found");
     }
 
     @Override
-    public String setConfig(Session session, String parameter, String value) throws RemoteException, SecurityException {
-        validateSessionOrThrow(session.getToken());
-        authorizeOrThrow(session.getUsername(), "setConfig");
+    public String setConfig(String token, String username, String parameter, String value) throws RemoteException, SecurityException {
+        validateTokenOrThrow(token);
+        authorizeOrThrow(username, "setConfig");
         configParameters.put(parameter, value);
         log.info("Configuration updated: {} = {}", parameter, value);
         return "Configuration updated";
     }
 
     @Override
-    public Session login(String username, String password) throws RemoteException, SecurityException {
+    public String login(String username, String password) throws RemoteException, SecurityException {
         try {
             return authManager.authenticate(username, password);
         } catch (AuthenticationException e) {
@@ -156,14 +156,8 @@ public class PrintService extends UnicastRemoteObject implements IPrintService {
         }
     }
 
-    @Override
-    public void logout(Session session) throws RemoteException {
-        authManager.logout(session.getToken());
-        log.info("User logged out: {}", session.getToken());
-    }
-
-    private void validateSessionOrThrow(String token) throws RemoteException {
-        if (!authManager.validateSession(token)) {
+    private void validateTokenOrThrow(String token) throws RemoteException {
+        if (!authManager.validateToken(token)) {
             log.warn("Invalid or expired token: {}", token);
             throw new RemoteException("Invalid or expired token");
         }

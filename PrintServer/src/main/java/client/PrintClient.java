@@ -1,11 +1,8 @@
 package client;
 
-import auth.Session;
-import auth.exceptions.AuthenticationException;
 import lombok.extern.slf4j.Slf4j;
 import service.IPrintService;
 
-import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Scanner;
@@ -14,11 +11,10 @@ import java.util.Scanner;
 public class PrintClient {
     private static final String HOST = "localhost";
     private static final int PORT = 5099;
-    private static final String USERNAME = "david";
-    private static final String PASSWORD = "password123";
 
     private IPrintService printService;
-    private Session session = null;
+    private String token = null;
+    private String username = null;
 
     public void connect() {
         try {
@@ -32,7 +28,8 @@ public class PrintClient {
 
     public void login(String username, String password) {
         try {
-            session = printService.login(username, password);
+            this.token = printService.login(username, password);
+            this.username = username;
             log.info("Login attempt completed for {}", username);
         } catch (Exception e) {
             log.error("Login failed: {}", e.getMessage());
@@ -41,25 +38,15 @@ public class PrintClient {
 
     public String print(String filename, String printer) {
         try {
-            return printService.print(session, filename, printer);
+            return printService.print(this.token, this.username, filename, printer);
         } catch (Exception e) {
             return "Print operation failed: " + e.getMessage();
         }
     }
 
-    public void logout() {
-        try {
-            printService.logout(session);
-            log.info("Logout completed");
-            session = null;
-        } catch (RemoteException e) {
-            log.error("Logout failed: {}", e.getMessage());
-        }
-    }
-
     public String queue(String printer) {
         try {
-            return printService.queue(session, printer);
+            return printService.queue(this.token, this.username, printer);
         } catch (Exception e) {
             return "Queue operation failed: " + e.getMessage();
         }
@@ -67,7 +54,7 @@ public class PrintClient {
 
     public String topQueue(String printer, int job) {
         try {
-            return printService.topQueue(session, printer, job);
+            return printService.topQueue(this.token, this.username, printer, job);
         } catch (Exception e) {
             return "TopQueue operation failed: " + e.getMessage();
         }
@@ -75,7 +62,7 @@ public class PrintClient {
 
     public void restart() {
         try {
-            printService.restart(session);
+            printService.restart(this.token, this.username);
         } catch (Exception e) {
             log.error("Restart operation failed: {}", e.getMessage());
         }
@@ -83,7 +70,7 @@ public class PrintClient {
 
     public void start() {
         try {
-            printService.start(session);
+            printService.start(this.token, this.username);
         } catch (Exception e) {
             log.error("Start operation failed: {}", e.getMessage());
         }
@@ -91,7 +78,7 @@ public class PrintClient {
 
     public void stop() {
         try {
-            printService.start(session);
+            printService.start(this.token, this.username);
         } catch (Exception e) {
             log.error("Stop operation failed: {}", e.getMessage());
         }
@@ -99,7 +86,7 @@ public class PrintClient {
 
     public String status(String printer) {
         try {
-            return printService.status(session, printer);
+            return printService.status(this.token, this.username, printer);
         } catch (Exception e) {
             return "Status operation failed: " + e.getMessage();
         }
@@ -107,7 +94,7 @@ public class PrintClient {
 
     public String readConfig(String parameter) {
         try {
-            return printService.readConfig(session, parameter);
+            return printService.readConfig(this.token, this.username, parameter);
         } catch (Exception e) {
             return "Read Config operation failed: " + e.getMessage();
         }
@@ -115,14 +102,12 @@ public class PrintClient {
 
     public String setConfig(String parameter, String value) {
         try {
-            return printService.setConfig(session, parameter, value);
+            return printService.setConfig(this.token, this.username, parameter, value);
         } catch (Exception e) {
             return "Set Config operation failed: " + e.getMessage();
         }
     }
 
-
-    // Main method to test the client
     public static void main(String[] args) {
         PrintClient client = new PrintClient();
         Scanner scanner = new Scanner(System.in);
@@ -131,7 +116,7 @@ public class PrintClient {
 
         try {
             client.connect();
-            while (client.session == null) {
+            while (client.token == null) {
                 System.out.print("Enter username: ");
                 String username = scanner.nextLine();
                 System.out.print("Enter password: ");
