@@ -1,23 +1,30 @@
 package auth;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.*;
 import java.security.SecureRandom;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
-public class PasswordStorage {
+public class InternalStorage {
     private static final int SALT_LENGTH = 16;
     private static final String DB_URL = "jdbc:h2:mem:printserver;DB_CLOSE_DELAY=-1;";
     private static final String DB_USER = "sa";
     private static final String DB_PASSWORD = "";
+    private static final String POLICY_FILE = "policy.json";
 
-    public PasswordStorage() {
+    public InternalStorage() {
         initDatabase();
         addTestUsers();
+        loadPoliciesFromJson();
     }
 
     private void initDatabase() {
@@ -26,12 +33,22 @@ public class PasswordStorage {
 
             // Create users table
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    username VARCHAR(50) PRIMARY KEY,
-                    salt VARCHAR(64) NOT NULL,
-                    password_hash VARCHAR(256) NOT NULL
-                )
-            """);
+                        CREATE TABLE IF NOT EXISTS users (
+                            username VARCHAR(50) PRIMARY KEY,
+                            salt VARCHAR(64) NOT NULL,
+                            password_hash VARCHAR(256) NOT NULL
+                        )
+                    """);
+
+            // Create policies table
+            stmt.execute("""
+                        CREATE TABLE IF NOT EXISTS policies (
+                            username VARCHAR(50),
+                            operation VARCHAR(50),
+                            PRIMARY KEY (username, operation),
+                            FOREIGN KEY (username) REFERENCES users(username)
+                        )
+                    """);
             log.info("Database initialized successfully");
         } catch (SQLException e) {
             log.error("Database initialization failed", e);
@@ -44,7 +61,10 @@ public class PasswordStorage {
             storePassword("alice", "password123");  // admin
             storePassword("bob", "password123");    // technician
             storePassword("cecilia", "password123"); // power user
-            storePassword("david", "password123");   // normal user
+            storePassword("david", "password123"); // normal user
+            storePassword("erica", "password123"); // normal users
+            storePassword("fred", "password123"); // normal users
+            storePassword("george", "password123"); // normal users
             log.info("Test users created successfully");
         } catch (Exception e) {
             log.error("Error creating test users", e);
@@ -102,6 +122,22 @@ public class PasswordStorage {
         }
     }
 
+    public boolean verifyOperation(String username, String operation) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                     "SELECT COUNT(*) FROM policies WHERE username = ? AND operation = ?")) {
+            stmt.setString(1, username);
+            stmt.setString(2, operation);
+
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
+            return rs.getInt(1) > 0;
+        } catch (SQLException e) {
+            log.error("Failed to check operation permissions for user: {}", username, e);
+            return false;
+        }
+    }
+
     private String generateSalt() {
         SecureRandom random = new SecureRandom();
         byte[] salt = new byte[SALT_LENGTH];
@@ -117,6 +153,44 @@ public class PasswordStorage {
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Failed to hash password", e);
+        }
+    }
+
+    private void loadPoliciesFromJson() {
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(POLICY_FILE)) {
+            if (inputStream == null) {
+                throw new IOException(POLICY_FILE + " not found in resources");
+            }
+
+            // Read JSON into a Map
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, List<String>> accessControlList = mapper.readValue(inputStream, Map.class);
+
+            // Store policies in the database
+            try (Connection conn = getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(
+                         "MERGE INTO policies (username, operation) VALUES (?, ?)")) {
+
+                for (Map.Entry<String, List<String>> entry : accessControlList.entrySet()) {
+                    String username = entry.getKey();
+                    List<String> operations = entry.getValue();
+
+                    for (String operation : operations) {
+                        stmt.setString(1, username);
+                        stmt.setString(2, operation);
+                        stmt.addBatch();
+                    }
+                }
+                stmt.executeBatch();
+                log.info("Policies loaded successfully from {}", POLICY_FILE);
+            }
+
+        } catch (IOException e) {
+            log.error("Failed to load policy.json", e);
+            throw new RuntimeException("Failed to load policies from " + POLICY_FILE, e);
+        } catch (Exception e) {
+            log.error("Failed to store policies in the database", e);
+            throw new RuntimeException("Failed to store policies in database", e);
         }
     }
 }
