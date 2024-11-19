@@ -5,25 +5,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-@RequiredArgsConstructor
 public class AuthManager {
-    private final PasswordStorage passwordStorage;
+    private final InternalStorage internalStorage;
     private final TokenManager tokenManager;
-    private final PolicyLoader policyLoader;
 
-    public AuthManager(String policyFilePath, PasswordStorage passwordStorage, TokenManager tokenManager) throws IOException {
-        this.passwordStorage = passwordStorage;
+    public AuthManager(InternalStorage internalStorage, TokenManager tokenManager) throws IOException {
+        this.internalStorage = internalStorage;
         this.tokenManager = tokenManager;
-        this.policyLoader = new PolicyLoader(policyFilePath);
     }
 
     public String authenticate(String username, String password) throws AuthenticationException {
-        if (!passwordStorage.verifyPassword(username, password))
+        if (!internalStorage.verifyPassword(username, password))
             throw new AuthenticationException("Invalid credentials", username);
 
         return tokenManager.generateToken(username);
@@ -38,12 +33,9 @@ public class AuthManager {
     }
 
     public boolean authorize(String username, String operation) {
-        String userRole = passwordStorage.getUserRoleFromDatabase(username);
-        Set<String> permissions = this.policyLoader.getPermissionForRole(userRole);
-        if (permissions.contains(operation)) {
-            return true;
-        } else {
+        if (!internalStorage.verifyOperation(username, operation)) {
             throw new SecurityException("User does not have permission for this operation");
         }
+        return true;
     }
 }

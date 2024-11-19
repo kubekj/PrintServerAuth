@@ -3,7 +3,7 @@ package service;
 import auth.AuthManager;
 import auth.TokenManager;
 import auth.exceptions.AuthenticationException;
-import auth.PasswordStorage;
+import auth.InternalStorage;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -14,14 +14,13 @@ import java.util.*;
 @Slf4j
 public class PrintService extends UnicastRemoteObject implements IPrintService {
     private final AuthManager authManager;
-    private final String policyFilePath = "policy.json";
     private final Map<String, Queue<PrintJob>> printerQueues;
     private final Map<String, String> configParameters;
     private boolean isRunning;
 
     public PrintService() throws RemoteException, IOException {
         super();
-        this.authManager = new AuthManager(policyFilePath, new PasswordStorage(), new TokenManager());
+        this.authManager = new AuthManager(new InternalStorage(), new TokenManager());
         this.printerQueues = new HashMap<>();
         this.configParameters = new HashMap<>();
         this.isRunning = true;
