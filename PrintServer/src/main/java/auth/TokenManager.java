@@ -1,6 +1,5 @@
 package auth;
 
-import auth.exceptions.ExpiredTokenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -34,12 +33,8 @@ public class TokenManager {
                     .parseClaimsJws(token)
                     .getBody();
 
-            boolean isExpired = claims.getExpiration().before(new Date());
-
-            if (isExpired) throw new ExpiredTokenException("Provided token has expired", token);
-
             return !claims.getExpiration().before(new Date());
-        } catch (JwtException | ExpiredTokenException | IllegalArgumentException e) {
+        } catch (JwtException | IllegalArgumentException e) {
             System.out.println("Invalid token: " + e.getMessage());
             return false;
         }
