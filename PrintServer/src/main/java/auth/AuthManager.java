@@ -21,8 +21,4 @@ public class AuthManager {
     public boolean validateToken(String token) {
         return tokenManager.validateToken(token);
     }
-
-    public String getUsernameFromToken(String token) {
-        return tokenManager.getUsernameFromToken(token);
-    }
 }

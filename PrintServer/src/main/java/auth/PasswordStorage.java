@@ -41,10 +41,10 @@ public class PasswordStorage {
 
     private void addTestUsers() {
         try {
-            storePassword("alice", "password123");  // admin
-            storePassword("bob", "password123");    // technician
-            storePassword("cecilia", "password123"); // power user
-            storePassword("david", "password123");   // normal user
+            storePassword("alice", "password123");
+            storePassword("bob", "password123");
+            storePassword("cecilia", "password123");
+            storePassword("david", "password123");
             log.info("Test users created successfully");
         } catch (Exception e) {
             log.error("Error creating test users", e);
@@ -67,6 +67,7 @@ public class PasswordStorage {
             stmt.setString(2, salt);
             stmt.setString(3, hashedPassword);
             stmt.executeUpdate();
+
             log.info("Stored password for user: {}", username);
         } catch (SQLException e) {
             log.error("Failed to store password for user: {}", username, e);
@@ -91,11 +92,7 @@ public class PasswordStorage {
             String storedHash = rs.getString("password_hash");
             String hashedInput = hashPassword(password, salt);
 
-            boolean verified = storedHash.equals(hashedInput);
-            log.debug("Password verification for user {}: {}",
-                    username, verified ? "successful" : "failed");
-            return verified;
-
+            return storedHash.equals(hashedInput);
         } catch (SQLException e) {
             log.error("Password verification failed for user: {}", username, e);
             return false;
