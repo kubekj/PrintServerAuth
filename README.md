@@ -1,73 +1,87 @@
 # Print Server with Authentication and Access Control
+A secure print server implementation using Java RMI with authentication and access control.
 
-A secure print server implementation using Java RMI with authentication and session management. This project is part of the Authentication and Access Control Lab, implementing a client-server architecture for a mock print server system.
+## Security Assumptions
+As per lab requirements, secure communication between client and server is assumed to be handled by external means. Channel confidentiality and integrity are considered provided by the underlying infrastructure. The implementation focuses on authentication and access control mechanisms rather than transport security.
 
 ## Features
 
 ### Authentication System
-- Password-based authentication using secure hashing
-- Session management with UUIDs
-- Automatic session expiration after 30 minutes
-- H2 database for credential storage
-- Secure password storage with salting
+The authentication system provides secure user verification through:
+- Password-based authentication with SHA-256 hashing
+- JWT-based session management with 30-minute expiration
+- H2 in-memory database for credential storage
+- Unique salt generation per user
 
 ### Print Server Operations
-- Print job submission
-- Queue management
-- Printer status monitoring
-- Configuration management
-- Server start/stop/restart capabilities
+The print server provides comprehensive job management including:
+```java
+print(filename, printer)     // Submit a print job
+queue(printer)               // List print queue for a printer
+topQueue(printer, job)       // Move job to top of queue
+start()                      // Start print server
+stop()                       // Stop print server
+restart()                    // Reset print server
+status(printer)              // Get printer status
+readConfig(parameter)        // Read configuration
+setConfig(parameter, value)  // Update configuration
+```
 
-### Available Operations
-- `print(filename, printer)`: Submit a print job
-- `queue(printer)`: List print queue for a printer
-- `topQueue(printer, job)`: Move job to top of queue
-- `start()`: Start print server
-- `stop()`: Stop print server
-- `restart()`: Reset print server
-- `status(printer)`: Get printer status
-- `readConfig(parameter)`: Read configuration
-- `setConfig(parameter, value)`: Update configuration
+## Technical Implementation
 
-## Technical Details
+The system is built using Java RMI for client-server communication, with H2 providing in-memory data storage. Authentication is managed through JWT tokens, with passwords secured using SHA-256 hashing and unique salts.
 
-### Authentication Implementation
-- Secure password storage using H2 database
-- Session-based authentication with UUID tokens
-- Salt generation and password hashing
-- Automatic session cleanup for expired sessions
-
-### Technology Stack
+Key technical components:
 - Java RMI for client-server communication
-- H2 Database for data persistence
-- Lombok for reducing boilerplate
+- H2 Database for in-memory storage
+- JWT for session management
+- SHA-256 for password hashing
+- Lombok for code reduction
 - SLF4J with Logback for logging
 
-## Setup
+### Project Structure
+```
+src/main/java/
+├── auth/
+│   ├── AuthManager.java        # Authentication orchestration
+│   ├── PasswordStorage.java    # Secure password management
+│   ├── TokenManager.java       # JWT token handling
+│   └── exceptions/
+│       └── AuthenticationException.java
+│       └── ExpiredTokenException.java
+├── server/
+│   └── PrintServer.java        # RMI server implementation
+├── client/
+│   └── PrintClient.java        # Client implementation
+└── service/
+    ├── PrintService.java       # Service implementation
+    └── IPrintService.java      # Service interface
+```
+
+## Setup and Configuration
 
 ### Prerequisites
-- Java 17 or higher
-- Maven 3.6 or higher
+The system requires Java 17 or higher and Maven 3.6 or higher.
 
 ### Dependencies
 ```xml
 <dependencies>
-    <!-- H2 Database -->
     <dependency>
         <groupId>com.h2database</groupId>
         <artifactId>h2</artifactId>
         <version>2.2.224</version>
     </dependency>
-    
-    <!-- Lombok -->
+    <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-api</artifactId>
+        <version>0.11.5</version>
+    </dependency>
     <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
         <version>1.18.30</version>
         <scope>provided</scope>
     </dependency>
-    
-    <!-- Logging -->
     <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
@@ -77,51 +91,50 @@ A secure print server implementation using Java RMI with authentication and sess
 ```
 
 ### Running the Application
-
-1. Start the server:
+Start the server:
 ```bash
 mvn compile exec:java -Dexec.mainClass="server.PrintServer"
 ```
 
-2. Run the client:
+Run the client:
 ```bash
 mvn compile exec:java -Dexec.mainClass="client.PrintClient"
 ```
 
-## Project Structure
+## Security Implementation
 
-```
-src/main/java/
-├── auth/
-│   ├── AuthManager.java         # Authentication and session management
-│   ├── PasswordStorage.java     # Secure password storage
-│   ├── Session.java             # Session handling
-│   └── AuthenticationException.java
-├── server/
-│   └── PrintServer.java         # RMI server implementation
-├── client/
-│   └── PrintClient.java         # Client implementation
-└── service/
-    ├── PrintService.java        # Service implementation
-    └── IPrintService.java       # Service interface
-```
+The system implements several key security features:
+- Secure password storage using SHA-256 hashing
+- Unique salt generation per user
+- JWT tokens signed with HS256 algorithm
+- 30-minute token expiration
+- Mandatory token validation for all operations
+- Comprehensive input validation
 
-## Security Considerations
+### Test Users
+The system comes pre-configured with test users representing different roles:
 
-- Passwords are stored using secure hashing with unique salts
-- Sessions expire automatically after inactivity
-- All operations require valid session authentication
-- Database connections are secured with proper credentials
-- Input validation on all operations
+| Username | Role       | Password    |
+|----------|------------|-------------|
+| alice    | admin      | password123 |
+| bob      | technician | password123 |
+| cecilia  | power user | password123 |
+| david    | normal user| password123 |
 
-## Possible Future Improvements
+## Implementation Notes
+Current implementation characteristics:
+- In-memory H2 database for data storage
+- JWT tokens with HS256 signing
+- SHA-256 password hashing
+- RMI registry on port 5099
 
-- Implement access control lists (ACL)
-- Add role-based access control (RBAC)
-- Implement secure communication channel
-- Add password policy enforcement
-- Implement audit logging
-- Add user management interface
+## Improvements/Extensions
+The second part of the assignment can be found under branches with corresponding names (part2 and part3) and they extend the current solution with:
+- Access Control Lists (ACL)
+- Role-Based Access Control (RBAC)
+- Policy-based permission management
+- Role hierarchy implementation
+- Comprehensive audit logging
 
 ## License
-MIT
+MIT License
