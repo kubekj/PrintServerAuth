@@ -35,7 +35,6 @@ public class TokenManager {
 
             return !claims.getExpiration().before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
-            System.out.println("Invalid token: " + e.getMessage());
             return false;
         }
     }
