@@ -129,7 +129,7 @@ Current implementation characteristics:
 - RMI registry on port 5099
 
 ## Improvements/Extensions
-The second part of the assignment can be found under branches with corresponding names (Part2 and Part3) and it extends the current solution with:
+The second part of the assignment can be found under branches with corresponding names (part2 and part3) and they extend the current solution with:
 - Access Control Lists (ACL)
 - Role-Based Access Control (RBAC)
 - Policy-based permission management
